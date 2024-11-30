@@ -1,0 +1,17 @@
+[package]
+name = "bob_miner_v2"
+edition = "2021"
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "bob_miner_v2"
+path = "src/main.rs"
+
+[dependencies]
+candid = "0.10.10"
+hex = "0.4.3"
+ic-cdk = "0.16.0"
+ic-cdk-timers = "0.11.0"
+serde = "1.0.209"

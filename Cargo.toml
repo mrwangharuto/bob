@@ -1,0 +1,5 @@
+[workspace]
+members = [
+  "miner-v2",
+  "minter-v2",
+]
