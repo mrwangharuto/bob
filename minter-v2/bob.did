@@ -5,6 +5,7 @@ type Block = record {
   total_cycles_burned : opt nat64;
   timestamp : nat64;
   rewards : nat64;
+  miner_count : opt nat64;
 };
 type CurrentBlockStatus = record {
   burned_cyles : nat64;
@@ -22,17 +23,6 @@ type PoolStats = record {
 };
 type Result = variant { Ok; Err : text };
 type Result_1 = variant { Ok : principal; Err : text };
-type State = record {
-  principal_guards : vec principal;
-  last_solved_challenge_ts : nat64;
-  active_tasks : vec TaskType;
-  bob_ledger_id : principal;
-  miner_to_burned_cycles : vec record { principal; nat64 };
-  miner_to_owner : vec record { principal; principal };
-  miner_block_index : vec nat64;
-  principal_to_miner : vec record { principal; vec principal };
-  miner_to_mined_block : vec record { principal; nat64 };
-};
 type Stats = record {
   halving_count : nat64;
   average_block_speed : nat64;
@@ -42,16 +32,13 @@ type Stats = record {
   time_since_last_block : nat64;
   pending_blocks : vec Block;
 };
-type TaskType = variant { MineBob; ProcessLogic };
 service : () -> {
   filter_out_known_index : (vec nat64) -> (vec nat64) query;
-  get_blocks : () -> (vec Block) query;
   get_current_block_status : () -> (CurrentBlockStatus) query;
   get_latest_blocks : () -> (vec Block) query;
   get_leader_board : () -> (vec LeaderBoardEntry) query;
   get_miners : (principal) -> (vec Miner) query;
   get_pool_statistic : () -> (PoolStats) query;
-  get_state : () -> (State) query;
   get_statistics : () -> (Stats) query;
   get_wasm_len : () -> (nat64) query;
   hours_left_in_pool : (opt principal) -> (nat64) query;

@@ -10,13 +10,6 @@ type State = record {
   last_cycles_burned : nat;
   bob_minter_id : principal;
 };
-type Stats = record {
-  hashes_computed : nat;
-  cycle_balance : nat64;
-  solved_challenges : nat64;
-  hash_per_minute : nat;
-  cycles_burned_per_minute : nat;
-};
 type StatsV2 = record {
   cycles_burned_per_round : nat;
   last_round_cyles_burned : nat;
@@ -25,7 +18,6 @@ type StatsV2 = record {
 };
 service : (principal) -> {
   get_state : () -> (State) query;
-  get_statistics : () -> (Stats) query;
   get_statistics_v2 : () -> (StatsV2) query;
   push_challenge : (blob, nat64) -> ();
   update_miner_settings : (MinerSettings) -> ();

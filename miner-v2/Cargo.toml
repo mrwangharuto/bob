@@ -10,8 +10,7 @@ name = "bob_miner_v2"
 path = "src/main.rs"
 
 [dependencies]
-candid = "0.10.10"
-hex = "0.4.3"
-ic-cdk = "0.16.0"
+candid = "0.10.11"
+ic-cdk = "0.17.1"
 ic-cdk-timers = "0.11.0"
 serde = "1.0.209"

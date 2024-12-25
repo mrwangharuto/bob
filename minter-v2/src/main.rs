@@ -1,10 +1,13 @@
+use bob_minter_v2::guard::GuardPrincipal;
 use bob_minter_v2::memory::{
-    get_block, get_block_to_mine, get_expiration, get_mined_block, get_miner_owner,
-    get_miner_to_owner_and_index, get_user_expiration, insert_block_index, insert_expiration,
-    insert_new_miner, is_known_block, mined_block_count, user_count,
+    get_block, get_block_to_mine, get_expiration, get_miner_owner, get_miner_to_owner_and_index,
+    get_user_expiration, insert_block_index, insert_expiration, insert_new_miner, is_known_block,
+    mined_block_count, user_count,
 };
-use bob_minter_v2::miner::{create_canister, install_code, reinstall_code};
-use bob_minter_v2::tasks::{schedule_now, TaskType};
+use bob_minter_v2::miner::{
+    create_canister, install_code, reinstall_code, start_canister, stop_canister,
+};
+use bob_minter_v2::tasks::{schedule_after, schedule_now, TaskType};
 use bob_minter_v2::{
     fetch_block, miner_wasm, mutate_state, notify_top_up, read_state, replace_state, Block, State,
     BLOCK_HALVING, DAY_NANOS, SEC_NANOS,
@@ -12,6 +15,7 @@ use bob_minter_v2::{
 use candid::{CandidType, Encode, Principal};
 use ic_cdk::{init, post_upgrade, query, update};
 use icp_ledger::{AccountIdentifier, Operation};
+use std::time::Duration;
 
 fn main() {}
 
@@ -49,25 +53,13 @@ fn init() {
 }
 
 fn setup_timer() {
-    schedule_now(TaskType::ProcessLogic);
     schedule_now(TaskType::MineBob);
+    schedule_after(Duration::from_secs(300), TaskType::ProcessLogic);
 }
 
 #[query]
 fn get_wasm_len() -> usize {
     miner_wasm().len()
-}
-
-#[query]
-fn get_blocks() -> Vec<Block> {
-    get_mined_block()
-}
-
-use bob_minter_v2::tasks::get_task_queue;
-use bob_minter_v2::tasks::Task;
-#[query(hidden = true)]
-fn task_q() -> Vec<Task> {
-    get_task_queue()
 }
 
 #[query]
@@ -111,64 +103,29 @@ fn get_current_block_status() -> CurrentBlockStatus {
 
 #[derive(CandidType, Ord, PartialOrd, Eq, PartialEq, Clone)]
 struct LeaderBoardEntry {
-    owner: Principal,
-    miner_count: usize,
     block_count: u64,
+    miner_count: usize,
+    owner: Principal,
 }
 
 #[query]
 fn get_leader_board() -> Vec<LeaderBoardEntry> {
     use std::collections::BTreeSet;
-
+    let mut result: BTreeSet<LeaderBoardEntry> = Default::default();
     read_state(|s| {
-        let mut principal_counts: Vec<(Principal, u64)> = s
-            .miner_to_mined_block
-            .iter()
-            .map(|(principal, block_count)| (principal.clone(), block_count.clone()))
-            .collect();
-        principal_counts.sort_by(|a, b| b.1.cmp(&a.1));
-        let biggest: Vec<(Principal, u64)> = principal_counts.into_iter().take(20).collect();
-
-        let mut result: BTreeSet<LeaderBoardEntry> = BTreeSet::default();
-
-        for (miner, _block_count) in biggest {
-            let (owner, block_count, miner_count): (Principal, u64, usize) =
-                match s.miner_to_owner.get(&miner) {
-                    Some(owner) => {
-                        let block_count = s
-                            .principal_to_miner
-                            .get(&owner)
-                            .map(|miners| {
-                                miners
-                                    .iter()
-                                    .map(|miner| *s.miner_to_mined_block.get(miner).unwrap_or(&0))
-                                    .sum::<u64>()
-                            })
-                            .unwrap_or(0);
-
-                        let miner_count = s
-                            .principal_to_miner
-                            .get(&owner)
-                            .map(|miners| miners.len())
-                            .unwrap_or(0);
-
-                        (owner.clone(), block_count, miner_count)
-                    }
-                    None => {
-                        // Handle the case where the miner is not found
-                        // You can return default values or handle the error as needed
-                        (Principal::anonymous(), 0, 0)
-                    }
-                };
+        for (owner, miners) in s.principal_to_miner.iter() {
+            let mined_blocks: u64 = miners
+                .iter()
+                .map(|m| s.miner_to_mined_block.get(m).unwrap_or(&0))
+                .sum();
             result.insert(LeaderBoardEntry {
-                owner,
-                miner_count,
-                block_count,
+                block_count: mined_blocks,
+                miner_count: miners.len(),
+                owner: *owner,
             });
         }
-
-        result.iter().cloned().collect()
-    })
+    });
+    result.iter().rev().take(20).cloned().collect()
 }
 
 #[update]
@@ -178,6 +135,9 @@ async fn spawn_miner(block_index: u64) -> Result<Principal, String> {
     if ic_cdk::caller() == Principal::anonymous() {
         return Err("cannot spawn anonymously".to_string());
     }
+    let _guard_principal = GuardPrincipal::new(ic_cdk::caller())
+        .map_err(|guard_error| format!("{:?}", guard_error))?;
+
     if read_state(|s| s.miner_block_index.contains(&block_index)) || is_known_block(block_index) {
         return Err("already consumed block index".to_string());
     }
@@ -242,6 +202,9 @@ async fn join_pool(block_index: u64) -> Result<(), String> {
     if ic_cdk::caller() == Principal::anonymous() {
         return Err("cannot spawn anonymously".to_string());
     }
+    let _guard_principal = GuardPrincipal::new(ic_cdk::caller())
+        .map_err(|guard_error| format!("{:?}", guard_error))?;
+
     if read_state(|s| s.miner_block_index.contains(&block_index)) || is_known_block(block_index) {
         return Err("already consumed block index".to_string());
     }
@@ -283,9 +246,9 @@ async fn join_pool(block_index: u64) -> Result<(), String> {
         let expire_at = from_time + days * DAY_NANOS;
         insert_expiration(caller, expire_at);
         insert_block_index(block_index);
-        return Ok(());
+        Ok(())
     } else {
-        return Err("expected transfer".to_string());
+        Err("expected transfer".to_string())
     }
 }
 
@@ -293,21 +256,14 @@ async fn join_pool(block_index: u64) -> Result<(), String> {
 async fn upgrade_miner(miner: Principal) -> Result<(), String> {
     if let Some(owner) = get_miner_owner(miner) {
         assert_eq!(ic_cdk::caller(), owner);
-        return reinstall_code(miner, miner_wasm().to_vec(), Encode!(&owner).unwrap())
+        stop_canister(miner).await.map_err(|e| format!("{e:?}"))?;
+        reinstall_code(miner, miner_wasm().to_vec(), Encode!(&owner).unwrap())
             .await
-            .map_err(|e| format!("{e:?}"));
+            .map_err(|e| format!("{e:?}"))?;
+        start_canister(miner).await.map_err(|e| format!("{e:?}"))?;
+        return Ok(());
     }
     Err("unknown miner".to_string())
-}
-
-#[update(hidden = true)]
-async fn schedule_task(task: TaskType) {
-    assert_eq!(
-        ic_cdk::caller(),
-        Principal::from_text("dmhsm-cyaaa-aaaal-qjrdq-cai").unwrap()
-    );
-
-    schedule_now(task);
 }
 
 #[export_name = "canister_global_timer"]
@@ -317,9 +273,12 @@ fn timer() {
 
 #[update]
 fn submit_burned_cycles(cycles: u64) -> Result<(), String> {
+    let _guard_principal = GuardPrincipal::new(ic_cdk::caller())
+        .map_err(|guard_error| format!("{:?}", guard_error))?;
+
     if !read_state(|s| s.miner_to_owner.contains_key(&ic_cdk::caller())) {
         return Err(
-            "Unregistered miner, only miner spawned from this canister are allowed to submit"
+            "Unregitered miner, only miner spawned from this canister are allowed to submit"
                 .to_string(),
         );
     }
@@ -338,11 +297,6 @@ fn submit_burned_cycles(cycles: u64) -> Result<(), String> {
     });
 
     Ok(())
-}
-
-#[query]
-fn get_state() -> State {
-    read_state(|s| s.clone())
 }
 
 #[derive(CandidType)]

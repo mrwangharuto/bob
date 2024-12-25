@@ -51,26 +51,6 @@ fn update_miner_settings(settings: MinerSettings) {
 }
 
 #[derive(CandidType)]
-struct Stats {
-    cycle_balance: u64,
-    solved_challenges: u64,
-    hashes_computed: u128,
-    hash_per_minute: u128,
-    cycles_burned_per_minute: u128,
-}
-
-#[query]
-fn get_statistics() -> Stats {
-    read_state(|s| Stats {
-        cycle_balance: ic_cdk::api::canister_balance(),
-        solved_challenges: s.solved_challenges,
-        hashes_computed: s.hashes_computed,
-        hash_per_minute: s.max_cycles_per_round * 2,
-        cycles_burned_per_minute: s.last_cycles_burned * 2,
-    })
-}
-
-#[derive(CandidType)]
 struct StatsV2 {
     cycle_balance: u64,
     cycles_burned_per_round: u128,

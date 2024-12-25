@@ -1,3 +1,4 @@
+use crate::guard::TaskGuard;
 use crate::memory::{
     get_block_to_mine, get_expire_map, get_miner_owner, insert_block_to_mine, push_block,
     remove_block_to_mine, remove_expired_entries, should_mine, user_count,
@@ -12,7 +13,9 @@ use icrc_ledger_types::icrc1::account::Account;
 use icrc_ledger_types::icrc1::transfer::{TransferArg, TransferError};
 use rand::distributions::Standard;
 use rand::rngs::StdRng;
+use rand::seq::SliceRandom;
 use rand::{Rng, SeedableRng};
+use rand_chacha::ChaCha20Rng;
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 use std::cell::RefCell;
@@ -34,6 +37,7 @@ pub const MAINNET_LEDGER_CANISTER_ID: Principal =
 pub const MAINNET_CYCLE_MINTER_CANISTER_ID: Principal =
     Principal::from_slice(&[0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04, 0x01, 0x01]);
 
+pub mod guard;
 pub mod memory;
 pub mod miner;
 pub mod tasks;
@@ -64,17 +68,34 @@ pub fn next_block_time(seed: [u8; 32]) -> u64 {
 
 pub fn timer() {
     if let Some(task) = tasks::pop_if_ready() {
+        let task_type = task.task_type;
         match task.task_type {
             TaskType::MineBob => {
                 ic_cdk::spawn(async move {
+                    let _guard = match TaskGuard::new(task_type) {
+                        Ok(guard) => guard,
+                        Err(_) => return,
+                    };
+
                     let _ = mine_block().await;
                 });
             }
             TaskType::ProcessLogic => {
                 ic_cdk::spawn(async move {
+                    let _guard = match TaskGuard::new(task_type) {
+                        Ok(guard) => guard,
+                        Err(_) => return,
+                    };
+
+                    let _enqueue_followup_guard = scopeguard::guard((), |_| {
+                        schedule_after(Duration::from_secs(5), TaskType::ProcessLogic);
+                    });
+
                     if process_logic().await.is_err() {
                         schedule_after(Duration::from_secs(5), TaskType::ProcessLogic);
                     }
+
+                    scopeguard::ScopeGuard::into_inner(_enqueue_followup_guard);
                 });
             }
         }
@@ -115,26 +136,27 @@ pub async fn process_logic() -> Result<(), String> {
 
         let random_value = u64::from_le_bytes(random_array[..8].try_into().unwrap()) % total_cycles;
 
-        let mut cumulative_sum = 0;
         let selected_key = read_state(|s| {
-            s.miner_to_burned_cycles
-                .iter()
+            let mut entries: Vec<_> = s.miner_to_burned_cycles.iter().collect();
+            let seed: [u8; 32] = random_array.clone().try_into().unwrap();
+            let mut rng = ChaCha20Rng::from_seed(seed);
+
+            entries.shuffle(&mut rng);
+
+            let mut cumulative_sum = 0;
+            entries
+                .into_iter()
                 .find(|(_, &value)| {
                     cumulative_sum += value;
                     cumulative_sum > random_value
                 })
-                .map(|(key, _)| key)
-                .cloned()
+                .map(|(key, _)| *key)
         })
         .ok_or("No key selected")?;
 
         if let Some(to) = get_miner_owner(selected_key) {
-            let miner_cycles_burned = read_state(|s| {
-                s.miner_to_burned_cycles
-                    .get(&selected_key)
-                    .unwrap_or(&0)
-                    .clone()
-            });
+            let miner_cycles_burned =
+                read_state(|s| *s.miner_to_burned_cycles.get(&selected_key).unwrap_or(&0));
             mutate_state(|s| {
                 s.challenge_solved(selected_key, to, total_cycles, miner_cycles_burned)
             });
@@ -193,16 +215,18 @@ pub async fn mine_block() -> Result<(), String> {
             let user_count_u64 = user_count();
             let reward = block.rewards / user_count_u64;
             for (owner, _) in get_expire_map() {
-                let _ = transfer(
+                if transfer(
                     owner,
                     reward.into(),
                     Some(Nat::from(0_u8)),
                     ledger_canister_id,
                 )
-                .await;
+                .await
+                .is_err()
+                {}
             }
             remove_block_to_mine(block.clone());
-            push_block(block.clone());
+            push_block(block);
         } else {
             match transfer(
                 block.to,
@@ -216,7 +240,7 @@ pub async fn mine_block() -> Result<(), String> {
                     remove_block_to_mine(block.clone());
                     push_block(block);
                 }
-                Err(e) => {
+                Err(_e) => {
                     schedule_after(Duration::from_secs(15), TaskType::MineBob);
                 }
             }
@@ -301,6 +325,7 @@ pub struct Block {
     pub timestamp: u64,
     pub total_cycles_burned: Option<u64>,
     pub miner_cycles_burned: Option<u64>,
+    pub miner_count: Option<u64>,
 }
 
 #[derive(Clone, CandidType, Deserialize, Serialize, Debug)]
@@ -317,6 +342,9 @@ pub struct State {
     pub last_solved_challenge_ts: u64,
 
     pub miner_block_index: BTreeSet<u64>,
+
+    pub principal_guards: BTreeSet<Principal>,
+    pub active_tasks: BTreeSet<TaskType>,
 }
 
 impl State {
@@ -334,6 +362,9 @@ impl State {
             last_solved_challenge_ts: now,
 
             miner_block_index: BTreeSet::default(),
+
+            active_tasks: BTreeSet::default(),
+            principal_guards: BTreeSet::default(),
         }
     }
 
@@ -378,6 +409,7 @@ impl State {
             timestamp: ic_cdk::api::time(),
             total_cycles_burned: Some(total_cycles_burned),
             miner_cycles_burned: Some(cycles_burned),
+            miner_count: Some(self.miner_to_burned_cycles.len() as u64),
         });
         self.miner_to_mined_block
             .entry(by)

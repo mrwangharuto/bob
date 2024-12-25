@@ -109,6 +109,28 @@ pub async fn reinstall_code(
     Ok(())
 }
 
+pub async fn stop_canister(canister_id: Principal) -> Result<(), CallError> {
+    ic_cdk::api::management_canister::main::stop_canister(
+        ic_cdk::api::management_canister::main::CanisterIdRecord { canister_id },
+    )
+    .await
+    .map_err(|(code, msg)| CallError {
+        method: "stop_canister".to_string(),
+        reason: Reason::from_reject(code, msg),
+    })
+}
+
+pub async fn start_canister(canister_id: Principal) -> Result<(), CallError> {
+    ic_cdk::api::management_canister::main::start_canister(
+        ic_cdk::api::management_canister::main::CanisterIdRecord { canister_id },
+    )
+    .await
+    .map_err(|(code, msg)| CallError {
+        method: "start_canister".to_string(),
+        reason: Reason::from_reject(code, msg),
+    })
+}
+
 pub async fn create_canister(cycles_for_canister_creation: u64) -> Result<Principal, CallError> {
     let create_args = CreateCanisterArgs {
         settings: Some(CanisterSettingsArgsBuilder::new().build()),

@@ -151,7 +151,7 @@ pub fn remove_expired_entries(current_time: u64) {
         let keys_to_remove: Vec<Principal> = map
             .iter()
             .filter(|&(_, expiration)| expiration <= current_time)
-            .map(|(key, _)| key.clone())
+            .map(|(key, _)| key)
             .collect();
 
         for key in keys_to_remove {
