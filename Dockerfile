@@ -20,7 +20,8 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 
 # Verify installation
 RUN rustc --version && \
-    cargo --version
+    cargo --version && \
+    cargo install ic-wasm
 
 # Set the working directory
 WORKDIR /app
