@@ -36,7 +36,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: bob-canisters
-          path: target/wasm32-unknown-unknown/release/*.wasm.gz
+          path: target/wasm32-unknown-unknown/release
           retention-days: 10
           if-no-files-found: error
   validate-rust:
@@ -52,7 +52,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: bob-canisters
-          pattern: target/wasm32-unknown-unknown/release/*.wasm.gz
+          path: target/wasm32-unknown-unknown/release
       - name: 'Check code'
         run: |
           cargo fmt --all -- --check
@@ -73,7 +73,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: bob-canisters
-          pattern: target/wasm32-unknown-unknown/release/*.wasm.gz
+          path: target/wasm32-unknown-unknown/release
       - name: 'Test cargo crates'
         run: |
           cargo test --locked --workspace --exclude integration-tests
@@ -92,7 +92,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: bob-canisters
-          pattern: target/wasm32-unknown-unknown/release/*.wasm.gz
+          path: target/wasm32-unknown-unknown/release
       - name: 'Integration tests'
         run: |
           ./scripts/run-integration-tests.sh
