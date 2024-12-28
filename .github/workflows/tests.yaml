@@ -19,4 +19,5 @@ jobs:
           docker run -v $(pwd):/app -t rust-dev bash /app/build.sh
           sha256sum target/wasm32-unknown-unknown/release/*.wasm.gz
       - name: 'Test cargo crates'
-        run: cargo test --locked --workspace
+        run: |
+          docker run -v $(pwd):/app -t rust-dev cargo test --locked --workspace
