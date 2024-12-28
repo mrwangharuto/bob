@@ -2331,10 +2331,13 @@ dependencies = [
 name = "integration-tests"
 version = "0.0.1"
 dependencies = [
+ "bob-minter-v2",
  "candid",
  "candid_parser",
  "hex",
+ "ic-icp-index",
  "ic-icrc1-ledger",
+ "ic-ledger-core",
  "ic-ledger-types",
  "icp-ledger",
  "icrc-ledger-types",

@@ -8,7 +8,7 @@ use ic_icrc1_ledger::{InitArgsBuilder, LedgerArgument};
 use ic_ledger_types::Tokens;
 use ic_ledger_types::{AccountIdentifier, DEFAULT_SUBACCOUNT};
 use icrc_ledger_types::icrc1::account::Account;
-use pocket_ic::{update_candid_as, PocketIc};
+use pocket_ic::{update_candid_as, PocketIc, PocketIcBuilder};
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::Read;
@@ -45,7 +45,7 @@ struct CyclesCanisterInitPayload {
 }
 
 #[derive(CandidType)]
-pub struct UpdateIcpXdrConversionRatePayload {
+struct UpdateIcpXdrConversionRatePayload {
     pub data_source: String,
     pub timestamp_seconds: u64,
     pub xdr_permyriad_per_icp: u64,
@@ -158,8 +158,7 @@ fn deploy_cmc(pic: &PocketIc) {
             .get_time()
             .duration_since(SystemTime::UNIX_EPOCH)
             .unwrap()
-            .as_secs()
-            + 1,
+            .as_secs(),
         xdr_permyriad_per_icp: 7_8000, // 7.80 SDR per ICP
     };
     update_candid_as::<_, (Result<(), String>,)>(
@@ -174,7 +173,7 @@ fn deploy_cmc(pic: &PocketIc) {
     .unwrap();
 }
 
-pub(crate) fn deploy_system_canisters(pic: &PocketIc, icp_holders: Vec<Principal>) {
+fn deploy_system_canisters(pic: &PocketIc, icp_holders: Vec<Principal>) {
     deploy_icp_ledger_canister(pic, icp_holders);
     deploy_icp_index_canister(pic);
     deploy_cmc(pic);
@@ -220,7 +219,17 @@ fn deploy_bob_ledger(pic: &PocketIc) {
     );
 }
 
-pub(crate) fn deploy_bob_canisters(pic: &PocketIc) {
+fn deploy_bob_canisters(pic: &PocketIc) {
     deploy_bob(pic);
     deploy_bob_ledger(pic);
+}
+
+pub(crate) fn setup(icp_holders: Vec<Principal>) -> PocketIc {
+    let pic = PocketIcBuilder::new().with_nns_subnet().build();
+    pic.set_time(SystemTime::now());
+
+    deploy_system_canisters(&pic, icp_holders);
+    deploy_bob_canisters(&pic);
+
+    pic
 }
