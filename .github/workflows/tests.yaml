@@ -39,9 +39,16 @@ jobs:
         uses: actions/checkout@v4
       - name: 'Set up Rust'
         uses: mozilla-actions/sccache-action@v0.0.4
+      - name: 'Download ic-wasm'
+        run: |
+          curl -L https://github.com/dfinity/ic-wasm/releases/download/0.9.1/ic-wasm-linux64 -o /usr/local/bin/ic-wasm
+          chmod +x /usr/local/bin/ic-wasm
+      - name: 'Build BoB'
+        run: |
+          ./build.sh
       - name: 'Test cargo crates'
         run: |
-          cargo test --locked --workspace
+          cargo test --locked --workspace --exclude integration-tests
   integration-tests:
     name: 'integration-tests:required'
     runs-on: ubuntu-latest
