@@ -75,7 +75,7 @@ pub(crate) fn spawn_miner(pic: &PocketIc, user_id: Principal, amount: u64) -> Pr
     .unwrap()
 }
 
-pub(crate) fn join_pool(pic: &PocketIc, user_id: Principal, amount: u64) {
+pub(crate) fn join_native_pool(pic: &PocketIc, user_id: Principal, amount: u64) {
     let block_index = transfer(pic, user_id, amount);
 
     update_candid_as::<_, (Result<(), String>,)>(

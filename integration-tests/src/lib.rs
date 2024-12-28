@@ -4,7 +4,7 @@ mod setup;
 mod utils;
 
 use crate::setup::setup;
-use crate::utils::{bob_balance, join_pool, mine_block, spawn_miner};
+use crate::utils::{bob_balance, join_native_pool, mine_block, spawn_miner};
 use candid::Principal;
 
 // System canister IDs
@@ -27,6 +27,8 @@ pub(crate) const BOB_CANISTER_ID: Principal =
 pub(crate) const BOB_LEDGER_CANISTER_ID: Principal =
     Principal::from_slice(&[0x00, 0x00, 0x00, 0x00, 0x02, 0x40, 0x00, 0x59, 0x01, 0x01]);
 
+// Test scenarios
+
 #[test]
 fn test_spawn_miner() {
     let user_id = Principal::from_slice(&[0xFF; 29]);
@@ -47,8 +49,8 @@ fn test_native_pool() {
     let user_2 = Principal::from_slice(&[0xFE; 29]);
     let pic = setup(vec![user_1, user_2]);
 
-    join_pool(&pic, user_1, 100_000_000);
-    join_pool(&pic, user_2, 200_000_000);
+    join_native_pool(&pic, user_1, 100_000_000);
+    join_native_pool(&pic, user_2, 200_000_000);
 
     assert_eq!(bob_balance(&pic, user_1), 0_u64);
     assert_eq!(bob_balance(&pic, user_2), 0_u64);
