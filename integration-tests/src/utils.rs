@@ -14,7 +14,7 @@ pub(crate) fn get_icp_block(pic: &PocketIc, block_index: u64) -> Option<icp_ledg
         length: Nat::from(1_u8),
     };
     let blocks_raw = update_candid_as::<_, (ic_icp_index::GetBlocksResponse,)>(
-        &pic,
+        pic,
         NNS_ICP_INDEX_CANISTER_ID,
         Principal::anonymous(),
         "get_blocks",
@@ -41,7 +41,7 @@ pub(crate) fn transfer(pic: &PocketIc, user_id: Principal, amount: u64) -> u64 {
         created_at_time: None,
     };
     let block_index = update_candid_as::<_, (TransferResult,)>(
-        &pic,
+        pic,
         NNS_ICP_LEDGER_CANISTER_ID,
         user_id,
         "transfer",
@@ -64,7 +64,7 @@ pub(crate) fn spawn_miner(pic: &PocketIc, user_id: Principal, amount: u64) -> Pr
     let block_index = transfer(pic, user_id, amount);
 
     update_candid_as::<_, (Result<Principal, String>,)>(
-        &pic,
+        pic,
         BOB_CANISTER_ID,
         user_id,
         "spawn_miner",
@@ -79,7 +79,7 @@ pub(crate) fn join_native_pool(pic: &PocketIc, user_id: Principal, amount: u64) 
     let block_index = transfer(pic, user_id, amount);
 
     update_candid_as::<_, (Result<(), String>,)>(
-        &pic,
+        pic,
         BOB_CANISTER_ID,
         user_id,
         "join_pool",
@@ -92,7 +92,7 @@ pub(crate) fn join_native_pool(pic: &PocketIc, user_id: Principal, amount: u64) 
 
 pub(crate) fn get_stats(pic: &PocketIc) -> Stats {
     update_candid_as::<_, (Stats,)>(
-        &pic,
+        pic,
         BOB_CANISTER_ID,
         Principal::anonymous(),
         "get_statistics",
@@ -121,7 +121,7 @@ pub(crate) fn mine_block(pic: &PocketIc) {
 
 pub(crate) fn bob_balance(pic: &PocketIc, user_id: Principal) -> u64 {
     update_candid_as::<_, (Nat,)>(
-        &pic,
+        pic,
         BOB_LEDGER_CANISTER_ID,
         user_id,
         "icrc1_balance_of",
