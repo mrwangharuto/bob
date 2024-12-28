@@ -4,7 +4,7 @@
 
 ```bash
 docker build -t rust-dev .
-docker run -it -v $(pwd):/app rust-dev bash /app/build.sh
+docker run -v $(pwd):/app -it rust-dev bash /app/build.sh
 sha256sum target/wasm32-unknown-unknown/release/*.wasm.gz
 ```
 
