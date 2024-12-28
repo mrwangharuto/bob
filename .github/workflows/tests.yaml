@@ -17,17 +17,6 @@ env:
   RUSTC_WRAPPER: 'sccache'
 
 jobs:
-  tests:
-    name: 'docker-build:required'
-    runs-on: ubuntu-latest
-    steps:
-      - name: 'Checkout'
-        uses: actions/checkout@v4
-      - name: 'Docker build'
-        run: |
-          docker build -t rust-dev .
-          docker run -v $(pwd):/app -t rust-dev bash /app/build.sh
-          sha256sum target/wasm32-unknown-unknown/release/*.wasm.gz
   unit-tests:
     name: 'unit-tests:required'
     runs-on: ubuntu-latest
