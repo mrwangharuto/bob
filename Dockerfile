@@ -20,8 +20,11 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 
 # Verify installation
 RUN rustc --version && \
-    cargo --version && \
-    cargo install ic-wasm
+    cargo --version
+
+# Download ic-wasm binary
+RUN curl -L https://github.com/dfinity/ic-wasm/releases/download/0.9.1/ic-wasm-linux64 -o /usr/local/bin/ic-wasm
+RUN chmod +x /usr/local/bin/ic-wasm
 
 # Set the working directory
 WORKDIR /app

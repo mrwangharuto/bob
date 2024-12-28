@@ -372,3 +372,25 @@ fn get_miners(of: Principal) -> Vec<Miner> {
         result
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use candid_parser::utils::{service_equal, CandidSource};
+
+    #[test]
+    fn test_implemented_interface_matches_declared_interface_exactly() {
+        let declared_interface = include_str!("../bob.did");
+        let declared_interface = CandidSource::Text(declared_interface);
+
+        // The line below generates did types and service definition from the
+        // methods annotated with Rust CDK macros above. The definition is then
+        // obtained with `__export_service()`.
+        candid::export_service!();
+        let implemented_interface_str = __export_service();
+        let implemented_interface = CandidSource::Text(&implemented_interface_str);
+
+        let result = service_equal(declared_interface, implemented_interface);
+        assert!(result.is_ok(), "{:?}\n\n", result.unwrap_err());
+    }
+}

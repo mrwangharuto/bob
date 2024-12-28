@@ -11,6 +11,7 @@ path = "src/main.rs"
 
 [dependencies]
 candid = "0.10.11"
+candid_parser = "0.2.0-beta.4"
 ciborium = "0.2.2"
 cycles-minting-canister = { git = "https://github.com/dfinity/ic/", rev = "bc83b42ae2b8c8246e6387731910842a12ebee90" }
 ic-base-types = { git = "https://github.com/dfinity/ic/", rev = "bc83b42ae2b8c8246e6387731910842a12ebee90" }
