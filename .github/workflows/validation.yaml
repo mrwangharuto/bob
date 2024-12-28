@@ -1,0 +1,29 @@
+name: 'Code validation'
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+env:
+  CARGO_TERM_COLOR: always
+  # When getting Rust dependencies, retry on network error:
+  CARGO_NET_RETRY: 10
+  # Use the local .curlrc
+  CURL_HOME: .
+
+jobs:
+  validate-rust:
+    name: 'validate-rust:required'
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Checkout'
+        uses: actions/checkout@v4
+      - name: 'Check code'
+        run: |
+          cargo fmt --all -- --check
+          cargo clippy --locked --verbose --tests --workspace -- -D clippy::all
+          cargo clippy --locked --verbose --target wasm32-unknown-unknown -p bob_miner_v2 -p bob-minter-v2 -- -D clippy::all
+        env:
+          RUST_BACKTRACE: 1

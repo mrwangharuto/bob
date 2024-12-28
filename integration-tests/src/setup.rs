@@ -1,15 +1,19 @@
-use crate::{BOB_LEDGER_CANISTER_ID, BOB_CANISTER_ID, NNS_GOVERNANCE_CANISTER_ID, NNS_ICP_LEDGER_CANISTER_ID, NNS_ROOT_CANISTER_ID, NNS_CYCLES_MINTING_CANISTER_ID, NNS_ICP_INDEX_CANISTER_ID};
-use candid::{Encode, Principal, CandidType};
-use ic_icrc1_ledger::{LedgerArgument, InitArgsBuilder};
-use pocket_ic::{update_candid_as, PocketIc};
-use std::path::PathBuf;
-use std::fs::File;
-use std::collections::{HashMap, HashSet};
+use crate::{
+    BOB_CANISTER_ID, BOB_LEDGER_CANISTER_ID, NNS_CYCLES_MINTING_CANISTER_ID,
+    NNS_GOVERNANCE_CANISTER_ID, NNS_ICP_INDEX_CANISTER_ID, NNS_ICP_LEDGER_CANISTER_ID,
+    NNS_ROOT_CANISTER_ID,
+};
+use candid::{CandidType, Encode, Principal};
+use ic_icrc1_ledger::{InitArgsBuilder, LedgerArgument};
 use ic_ledger_types::Tokens;
-use std::io::Read;
-use std::time::SystemTime;
-use ic_ledger_types::{DEFAULT_SUBACCOUNT, AccountIdentifier};
+use ic_ledger_types::{AccountIdentifier, DEFAULT_SUBACCOUNT};
 use icrc_ledger_types::icrc1::account::Account;
+use pocket_ic::{update_candid_as, PocketIc};
+use std::collections::{HashMap, HashSet};
+use std::fs::File;
+use std::io::Read;
+use std::path::PathBuf;
+use std::time::SystemTime;
 
 // System canister init args
 
@@ -84,16 +88,22 @@ fn deploy_icp_ledger_canister(pic: &PocketIc, icp_holders: Vec<Principal>) {
     let minting_account = AccountIdentifier::new(&NNS_GOVERNANCE_CANISTER_ID, &DEFAULT_SUBACCOUNT);
     let icp_ledger_init_args = NnsLedgerCanisterPayload::Init(NnsLedgerCanisterInitPayload {
         minting_account: minting_account.to_string(),
-        initial_values: icp_holders.into_iter().map(|icp_holder| (
-            AccountIdentifier::new(&icp_holder, &DEFAULT_SUBACCOUNT).to_string(),
-            Tokens::from_e8s(1_000_000_000_000),
-        )).collect(),
+        initial_values: icp_holders
+            .into_iter()
+            .map(|icp_holder| {
+                (
+                    AccountIdentifier::new(&icp_holder, &DEFAULT_SUBACCOUNT).to_string(),
+                    Tokens::from_e8s(1_000_000_000_000),
+                )
+            })
+            .collect(),
         send_whitelist: HashSet::new(),
         transfer_fee: Some(Tokens::from_e8s(10_000)),
         token_symbol: Some("ICP".to_string()),
         token_name: Some("Internet Computer".to_string()),
     });
-    pic.install_canister(icp_ledger_canister_id,
+    pic.install_canister(
+        icp_ledger_canister_id,
         icp_ledger_canister_wasm,
         Encode!(&icp_ledger_init_args).unwrap(),
         Some(NNS_ROOT_CANISTER_ID),
@@ -109,7 +119,8 @@ fn deploy_icp_index_canister(pic: &PocketIc) {
     let icp_index_init_args = NnsIndexCanisterInitPayload {
         ledger_id: NNS_ICP_LEDGER_CANISTER_ID,
     };
-    pic.install_canister(icp_index_canister_id,
+    pic.install_canister(
+        icp_index_canister_id,
         icp_index_canister_wasm,
         Encode!(&icp_index_init_args).unwrap(),
         Some(NNS_ROOT_CANISTER_ID),
@@ -118,25 +129,38 @@ fn deploy_icp_index_canister(pic: &PocketIc) {
 
 fn deploy_cmc(pic: &PocketIc) {
     let cmc_id = pic
-        .create_canister_with_id(Some(NNS_ROOT_CANISTER_ID), None, NNS_CYCLES_MINTING_CANISTER_ID)
+        .create_canister_with_id(
+            Some(NNS_ROOT_CANISTER_ID),
+            None,
+            NNS_CYCLES_MINTING_CANISTER_ID,
+        )
         .unwrap();
     assert_eq!(cmc_id, NNS_CYCLES_MINTING_CANISTER_ID);
     let cmc_wasm = get_canister_wasm("cmc").to_vec();
-    let minting_account_id = icp_ledger::AccountIdentifier::from_hex(&AccountIdentifier::new(&NNS_GOVERNANCE_CANISTER_ID, &DEFAULT_SUBACCOUNT).to_string()).unwrap();
+    let minting_account_id = icp_ledger::AccountIdentifier::from_hex(
+        &AccountIdentifier::new(&NNS_GOVERNANCE_CANISTER_ID, &DEFAULT_SUBACCOUNT).to_string(),
+    )
+    .unwrap();
     let cmc_init_args: Option<CyclesCanisterInitPayload> = Some(CyclesCanisterInitPayload {
         ledger_canister_id: Some(NNS_ICP_LEDGER_CANISTER_ID),
         governance_canister_id: Some(NNS_GOVERNANCE_CANISTER_ID),
         minting_account_id: Some(minting_account_id),
     });
-    pic.install_canister(cmc_id,
+    pic.install_canister(
+        cmc_id,
         cmc_wasm,
         Encode!(&cmc_init_args).unwrap(),
         Some(NNS_ROOT_CANISTER_ID),
     );
     let set_icp_xdr_conversion_rate_args = UpdateIcpXdrConversionRatePayload {
-      data_source: "test".to_string(),
-      timestamp_seconds: pic.get_time().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs() + 1,
-      xdr_permyriad_per_icp: 7_8000, // 7.80 SDR per ICP
+        data_source: "test".to_string(),
+        timestamp_seconds: pic
+            .get_time()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap()
+            .as_secs()
+            + 1,
+        xdr_permyriad_per_icp: 7_8000, // 7.80 SDR per ICP
     };
     update_candid_as::<_, (Result<(), String>,)>(
         pic,
@@ -145,7 +169,9 @@ fn deploy_cmc(pic: &PocketIc) {
         "set_icp_xdr_conversion_rate",
         (set_icp_xdr_conversion_rate_args,),
     )
-    .unwrap().0.unwrap();
+    .unwrap()
+    .0
+    .unwrap();
 }
 
 pub(crate) fn deploy_system_canisters(pic: &PocketIc, icp_holders: Vec<Principal>) {
@@ -161,7 +187,8 @@ fn deploy_bob(pic: &PocketIc) {
     assert_eq!(bob_canisterid, BOB_CANISTER_ID);
     pic.add_cycles(bob_canisterid, 100_000_000_000_000);
     let bob_canisterwasm = get_canister_wasm("bob-minter-v2").to_vec();
-    pic.install_canister(bob_canisterid,
+    pic.install_canister(
+        bob_canisterid,
         bob_canisterwasm,
         Encode!(&()).unwrap(),
         Some(NNS_ROOT_CANISTER_ID),
@@ -175,9 +202,18 @@ fn deploy_bob_ledger(pic: &PocketIc) {
     assert_eq!(bob_ledger_canister_id, BOB_LEDGER_CANISTER_ID);
     pic.add_cycles(bob_ledger_canister_id, 100_000_000_000_000);
     let bob_ledger_canister_wasm = get_canister_wasm("icrc1_ledger").to_vec();
-    let minting_account = Account { owner: BOB_CANISTER_ID, subaccount: None};
-    let bob_ledger_canister_init_args = LedgerArgument::Init(InitArgsBuilder::with_symbol_and_name("BoB", "BoB").with_transfer_fee(1_000_000_u64).with_minting_account(minting_account).build());
-    pic.install_canister(bob_ledger_canister_id,
+    let minting_account = Account {
+        owner: BOB_CANISTER_ID,
+        subaccount: None,
+    };
+    let bob_ledger_canister_init_args = LedgerArgument::Init(
+        InitArgsBuilder::with_symbol_and_name("BoB", "BoB")
+            .with_transfer_fee(1_000_000_u64)
+            .with_minting_account(minting_account)
+            .build(),
+    );
+    pic.install_canister(
+        bob_ledger_canister_id,
         bob_ledger_canister_wasm,
         Encode!(&bob_ledger_canister_init_args).unwrap(),
         Some(NNS_ROOT_CANISTER_ID),
