@@ -1,3 +1,6 @@
 target/
 .dfx/
 .env
+integration-tests/pocket-ic
+integration-tests/wasms/
+**/*.swp

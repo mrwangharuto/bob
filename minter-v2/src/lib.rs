@@ -283,11 +283,7 @@ pub async fn fetch_block(block_height: u64) -> Result<icp_ledger::Block, String>
 }
 
 pub async fn notify_top_up(block_height: u64) -> Result<Cycles, String> {
-    let canister_id = if block_height < 13_863_251 {
-        Principal::from_text("yhz26-biaaa-aaaal-qjtsq-cai").unwrap()
-    } else {
-        ic_cdk::id()
-    };
+    let canister_id = ic_cdk::id();
     let args = Encode!(&NotifyTopUp {
         block_index: block_height,
         canister_id,

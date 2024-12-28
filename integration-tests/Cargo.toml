@@ -1,0 +1,14 @@
+[package]
+name = "integration-tests"
+version = "0.0.1"
+edition = "2021"
+
+[dependencies]
+candid = { workspace = true }
+candid_parser = { workspace = true }
+hex = { workspace = true }
+ic-icrc1-ledger = { workspace = true }
+ic-ledger-types = { workspace = true }
+icp-ledger = { workspace = true }
+icrc-ledger-types = { workspace = true }
+pocket-ic = { workspace = true }
