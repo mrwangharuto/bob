@@ -26,9 +26,10 @@ fi
 
 if [ $BUILD_WASMS == "true" ]; then
     ./build.sh
-    mkdir -p integration-tests/wasms
-    cp target/wasm32-unknown-unknown/release/bob-minter-v2.wasm.gz integration-tests/wasms
 fi
+
+mkdir -p integration-tests/wasms
+cp target/wasm32-unknown-unknown/release/*.wasm.gz integration-tests/wasms
 
 cd integration-tests
 if [[ ! -f pocket-ic || "$(./pocket-ic --version)" != "pocket-ic-server $POCKET_IC_VERSION" ]]

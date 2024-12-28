@@ -17,8 +17,8 @@ env:
   RUSTC_WRAPPER: 'sccache'
 
 jobs:
-  unit-tests:
-    name: 'unit-tests:required'
+  build-bob:
+    name: Build BoB canisters
     runs-on: ubuntu-latest
     steps:
       - name: 'Checkout'
@@ -32,21 +32,67 @@ jobs:
       - name: 'Build BoB'
         run: |
           ./build.sh
-      - name: 'Test cargo crates'
-        run: |
-          cargo test --locked --workspace --exclude integration-tests
-  integration-tests:
-    name: 'integration-tests:required'
+      - name: 'Upload Artifacts'
+        uses: actions/upload-artifact@v3
+        with:
+          name: bob-canisters
+          path: target/wasm32-unknown-unknown/release/*.wasm.gz
+          retention-days: 10
+          if-no-files-found: error
+  validate-rust:
+    name: 'validate-rust:required'
+    needs: [build-bob]
     runs-on: ubuntu-latest
     steps:
       - name: 'Checkout'
         uses: actions/checkout@v4
       - name: 'Set up Rust'
         uses: mozilla-actions/sccache-action@v0.0.4
-      - name: 'Download ic-wasm'
+      - name: 'Download Artifacts'
+        uses: actions/download-artifact@v3
+        with:
+          name: bob-canisters
+          pattern: target/wasm32-unknown-unknown/release/*.wasm.gz
+      - name: 'Check code'
         run: |
-          curl -L https://github.com/dfinity/ic-wasm/releases/download/0.9.1/ic-wasm-linux64 -o /usr/local/bin/ic-wasm
-          chmod +x /usr/local/bin/ic-wasm
+          cargo fmt --all -- --check
+          cargo clippy --locked --verbose --tests --workspace -- -D clippy::all
+          cargo clippy --locked --verbose --target wasm32-unknown-unknown -p bob_miner_v2 -p bob-minter-v2 -- -D clippy::all
+        env:
+          RUST_BACKTRACE: 1
+  unit-tests:
+    name: 'unit-tests:required'
+    needs: [build-bob]
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Checkout'
+        uses: actions/checkout@v4
+      - name: 'Set up Rust'
+        uses: mozilla-actions/sccache-action@v0.0.4
+      - name: 'Download Artifacts'
+        uses: actions/download-artifact@v3
+        with:
+          name: bob-canisters
+          pattern: target/wasm32-unknown-unknown/release/*.wasm.gz
+      - name: 'Test cargo crates'
+        run: |
+          cargo test --locked --workspace --exclude integration-tests
+  integration-tests:
+    name: 'integration-tests:required'
+    needs: [build-bob]
+    runs-on: ubuntu-latest
+    env:
+      BUILD_WASMS: 'false'
+    steps:
+      - name: 'Checkout'
+        uses: actions/checkout@v4
+      - name: 'Set up Rust'
+        uses: mozilla-actions/sccache-action@v0.0.4
+      - name: 'Download Artifacts'
+        uses: actions/download-artifact@v3
+        with:
+          name: bob-canisters
+          pattern: target/wasm32-unknown-unknown/release/*.wasm.gz
       - name: 'Integration tests'
         run: |
           ./scripts/run-integration-tests.sh
