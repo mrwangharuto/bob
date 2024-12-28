@@ -73,7 +73,7 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: bob-canisters
-          pattern: target/wasm32-unknown-unknown/release/*.wasm.gz
+          path: target/wasm32-unknown-unknown/release/*.wasm.gz
       - name: 'Test cargo crates'
         run: |
           cargo test --locked --workspace --exclude integration-tests
