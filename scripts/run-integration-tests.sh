@@ -31,7 +31,7 @@ if [ $BUILD_WASMS == "true" ]; then
 fi
 
 cd integration-tests
-if [ ! -f pocket-ic || "$(./pocket-ic --version)" != "pocket-ic-server $POCKET_IC_VERSION" ]
+if [[ ! -f pocket-ic || "$(./pocket-ic --version)" != "pocket-ic-server $POCKET_IC_VERSION" ]]
 then
   echo "PocketIC download starting"
   curl -sLO https://github.com/dfinity/pocketic/releases/download/$POCKET_IC_VERSION/pocket-ic-x86_64-$PLATFORM.gz || exit 1
