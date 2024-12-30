@@ -6,18 +6,93 @@ on:
     branches:
       - main
 
+env:
+  CARGO_TERM_COLOR: always
+  # When getting Rust dependencies, retry on network error:
+  CARGO_NET_RETRY: 10
+  # Use the local .curlrc
+  CURL_HOME: .
+  # sscache environment variables
+  SCCACHE_GHA_ENABLED: 'true'
+  RUSTC_WRAPPER: 'sccache'
+
 jobs:
-  tests:
-    name: 'tests:required'
+  build-bob:
+    name: Build BoB canisters
     runs-on: ubuntu-latest
     steps:
       - name: 'Checkout'
         uses: actions/checkout@v4
-      - name: 'Docker build'
+      - name: 'Set up Rust'
+        uses: mozilla-actions/sccache-action@v0.0.4
+      - name: 'Download ic-wasm'
         run: |
-          docker build -t rust-dev .
-          docker run -v $(pwd):/app -t rust-dev bash /app/build.sh
-          sha256sum target/wasm32-unknown-unknown/release/*.wasm.gz
+          curl -L https://github.com/dfinity/ic-wasm/releases/download/0.9.1/ic-wasm-linux64 -o /usr/local/bin/ic-wasm
+          chmod +x /usr/local/bin/ic-wasm
+      - name: 'Build BoB'
+        run: |
+          ./build.sh
+      - name: 'Upload Artifacts'
+        uses: actions/upload-artifact@v4
+        with:
+          name: bob-canisters
+          path: target/wasm32-unknown-unknown/release
+          retention-days: 10
+          if-no-files-found: error
+  validate-rust:
+    name: 'validate-rust:required'
+    needs: [build-bob]
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Checkout'
+        uses: actions/checkout@v4
+      - name: 'Set up Rust'
+        uses: mozilla-actions/sccache-action@v0.0.4
+      - name: 'Download Artifacts'
+        uses: actions/download-artifact@v4
+        with:
+          name: bob-canisters
+          path: target/wasm32-unknown-unknown/release
+      - name: 'Check code'
+        run: |
+          cargo fmt --all -- --check
+          cargo clippy --locked --verbose --tests --workspace -- -D clippy::all
+          cargo clippy --locked --verbose --target wasm32-unknown-unknown -p bob_miner_v2 -p bob-minter-v2 -- -D clippy::all
+        env:
+          RUST_BACKTRACE: 1
+  unit-tests:
+    name: 'unit-tests:required'
+    needs: [build-bob]
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Checkout'
+        uses: actions/checkout@v4
+      - name: 'Set up Rust'
+        uses: mozilla-actions/sccache-action@v0.0.4
+      - name: 'Download Artifacts'
+        uses: actions/download-artifact@v4
+        with:
+          name: bob-canisters
+          path: target/wasm32-unknown-unknown/release
       - name: 'Test cargo crates'
         run: |
-          docker run -v $(pwd):/app -t rust-dev cargo test --locked --workspace
+          cargo test --locked --workspace --exclude integration-tests
+  integration-tests:
+    name: 'integration-tests:required'
+    needs: [build-bob]
+    runs-on: ubuntu-latest
+    env:
+      BUILD_WASMS: 'false'
+    steps:
+      - name: 'Checkout'
+        uses: actions/checkout@v4
+      - name: 'Set up Rust'
+        uses: mozilla-actions/sccache-action@v0.0.4
+      - name: 'Download Artifacts'
+        uses: actions/download-artifact@v4
+        with:
+          name: bob-canisters
+          path: target/wasm32-unknown-unknown/release
+      - name: 'Integration tests'
+        run: |
+          ./scripts/run-integration-tests.sh

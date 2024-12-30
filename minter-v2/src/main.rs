@@ -10,7 +10,7 @@ use bob_minter_v2::miner::{
 use bob_minter_v2::tasks::{schedule_after, schedule_now, TaskType};
 use bob_minter_v2::{
     fetch_block, miner_wasm, mutate_state, notify_top_up, read_state, replace_state, Block, State,
-    BLOCK_HALVING, DAY_NANOS, SEC_NANOS,
+    Stats, BLOCK_HALVING, DAY_NANOS, SEC_NANOS,
 };
 use candid::{CandidType, Encode, Principal};
 use ic_cdk::{init, post_upgrade, query, update};
@@ -45,11 +45,13 @@ fn post_upgrade() {
 
 #[init]
 fn init() {
-    setup_timer();
-
     let state = State::new(ic_cdk::api::time());
 
+    let pool_id = Principal::from_text("zje3u-qaaaa-aaaai-acr2a-cai").unwrap();
+    insert_new_miner(pool_id, pool_id, 0);
+
     replace_state(state);
+    setup_timer();
 }
 
 fn setup_timer() {
@@ -297,17 +299,6 @@ fn submit_burned_cycles(cycles: u64) -> Result<(), String> {
     });
 
     Ok(())
-}
-
-#[derive(CandidType)]
-struct Stats {
-    average_block_speed: u64,
-    block_count: u64,
-    miner_count: usize,
-    halving_count: u64,
-    cycle_balance: u64,
-    time_since_last_block: u64,
-    pending_blocks: Vec<Block>,
 }
 
 #[query]

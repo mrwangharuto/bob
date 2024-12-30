@@ -10,23 +10,23 @@ name = "bob-minter-v2"
 path = "src/main.rs"
 
 [dependencies]
-candid = "0.10.11"
-candid_parser = "0.2.0-beta.4"
-ciborium = "0.2.2"
-cycles-minting-canister = { git = "https://github.com/dfinity/ic/", rev = "bc83b42ae2b8c8246e6387731910842a12ebee90" }
-ic-base-types = { git = "https://github.com/dfinity/ic/", rev = "bc83b42ae2b8c8246e6387731910842a12ebee90" }
-ic-cdk = "0.17.1"
-ic-stable-structures = "0.6.5"
-ic0 = "0.23.0"
-ic-management-canister-types = { git = "https://github.com/dfinity/ic/", rev = "bc83b42ae2b8c8246e6387731910842a12ebee90" }
-icrc-ledger-client-cdk = { git = "https://github.com/dfinity/ic/", rev = "bc83b42ae2b8c8246e6387731910842a12ebee90" }
-ic-types = { git = "https://github.com/dfinity/ic/", rev = "bc83b42ae2b8c8246e6387731910842a12ebee90" }
-icrc-ledger-types = { git = "https://github.com/dfinity/ic/", rev = "bc83b42ae2b8c8246e6387731910842a12ebee90" }
-ic-ledger-core = { git = "https://github.com/dfinity/ic/", rev = "bc83b42ae2b8c8246e6387731910842a12ebee90" }
-icp-ledger = { git = "https://github.com/dfinity/ic/", rev = "bc83b42ae2b8c8246e6387731910842a12ebee90" }
-ic-icp-index = { git = "https://github.com/dfinity/ic/", rev = "bc83b42ae2b8c8246e6387731910842a12ebee90" }
-rand = "0.8"
-rand_chacha = "0.3.1"
-scopeguard = "1.2.0"
-serde_json = "1.0.120"
-serde = "1.0.209"
+candid = { workspace = true }
+candid_parser = { workspace = true }
+ciborium = { workspace = true }
+cycles-minting-canister = { workspace = true }
+ic-base-types = { workspace = true }
+ic-cdk = { workspace = true }
+ic-stable-structures = { workspace = true }
+ic0 = { workspace = true }
+ic-management-canister-types = { workspace = true }
+icrc-ledger-client-cdk = { workspace = true }
+ic-types = { workspace = true }
+icrc-ledger-types = { workspace = true }
+ic-ledger-core = { workspace = true }
+icp-ledger = { workspace = true }
+ic-icp-index = { workspace = true }
+rand = { workspace = true }
+rand_chacha = { workspace = true }
+scopeguard = { workspace = true }
+serde_json = { workspace = true }
+serde = { workspace = true }

@@ -283,11 +283,7 @@ pub async fn fetch_block(block_height: u64) -> Result<icp_ledger::Block, String>
 }
 
 pub async fn notify_top_up(block_height: u64) -> Result<Cycles, String> {
-    let canister_id = if block_height < 13_863_251 {
-        Principal::from_text("yhz26-biaaa-aaaal-qjtsq-cai").unwrap()
-    } else {
-        ic_cdk::id()
-    };
+    let canister_id = ic_cdk::id();
     let args = Encode!(&NotifyTopUp {
         block_index: block_height,
         canister_id,
@@ -326,6 +322,17 @@ pub struct Block {
     pub total_cycles_burned: Option<u64>,
     pub miner_cycles_burned: Option<u64>,
     pub miner_count: Option<u64>,
+}
+
+#[derive(CandidType, Deserialize, Debug)]
+pub struct Stats {
+    pub average_block_speed: u64,
+    pub block_count: u64,
+    pub miner_count: usize,
+    pub halving_count: u64,
+    pub cycle_balance: u64,
+    pub time_since_last_block: u64,
+    pub pending_blocks: Vec<Block>,
 }
 
 #[derive(Clone, CandidType, Deserialize, Serialize, Debug)]
