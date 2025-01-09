@@ -2,7 +2,7 @@
 name: Alice
 description: |
   BOB's partner.
-logo: logo.webp
+logo: logo.png
 url: https://alice.fun/
 NnsProposal:
   title: NNS Proposal to create an SNS named 'Alice'
@@ -92,7 +92,7 @@ NnsProposal:
 
     - **Minimum to Be Raised:** 1 ICP  
 
-    - **Maximum to Be Raised:** 4,269,426 ICP  
+    - **Maximum to Be Raised:** 469,269 ICP  
 
 
     ---
@@ -107,7 +107,9 @@ NnsProposal:
     - [Website](https://alice.fun/)  
 fallback_controller_principals:
   - nlstb-bd4xd-vmcda-msekc-pfag7-jdjk5-mydis-alhno-3wmo6-ygvdb-vqe
-dapp_canisters: []
+dapp_canisters:
+  - 6lnhz-oaaaa-aaaas-aabkq-cai
+  - 7pail-xaaaa-aaaas-aabmq-cai
 Token:
   name: ALICE
   symbol: ALICE
@@ -137,7 +139,7 @@ Distribution:
     - principal: udpyj-g45tk-mj2vq-ejped-52227-vadno-betfw-axuzu-5t244-5vcn7-qae
       stake: 8_400_000 tokens
       memo: 101
-      dissolve_delay: 0 months
+      dissolve_delay: 1 day
       vesting_period: 0 months
     - principal: udpyj-g45tk-mj2vq-ejped-52227-vadno-betfw-axuzu-5t244-5vcn7-qae
       stake: 8_400_000 tokens
@@ -145,20 +147,20 @@ Distribution:
       dissolve_delay: 0 months
       vesting_period: 0 months
   InitialBalances:
-    governance: 0 tokens
+    treasury: 0 tokens
     swap: 25_200_000 tokens
   total: 42_000_000 tokens
 Swap:
   minimum_participants: 42
   minimum_direct_participation_icp: 1 tokens
-  maximum_direct_participation_icp: 4_269_269 tokens
+  maximum_direct_participation_icp: 469_269 tokens
   minimum_participant_icp: 1 tokens
-  maximum_participant_icp: 4_269_269 tokens
+  maximum_participant_icp: 469_269 tokens
   confirmation_text: >
     I confirm my understanding of the responsibilities and risks
     associated with participating in this token swap.
   VestingSchedule:
-    events: 1
-    interval: 0 months
+    events: 2
+    interval: 1 day
   duration: 6 days
   neurons_fund_participation: false
