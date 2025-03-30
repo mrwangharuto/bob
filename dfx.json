@@ -8,13 +8,15 @@
       "gzip": true,
       "type": "rust"
     },
-    "bob-v2": {
-      "candid": "bob/minter-v2/bob.did",
-      "package": "bob_minter_v2",
-      "shrink": true,
-      "gzip": true,
+
+  "bob-v2": {
+   "candid": "bob/minter-v2/bob.did",
+    "package": "bob_minter_v2",
+    "shrink": true,
+     "gzip": true,
       "type": "rust"
     },
+
     "alice": {
       "candid": "alice/alice.did",
       "package": "alice",
@@ -32,3 +34,6 @@
   "output_env_file": ".env",
   "version": 1
 }
+
+
+

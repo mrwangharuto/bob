@@ -262,7 +262,7 @@ dependencies = [
 
 [[package]]
 name = "bob_minter_v2"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "candid",
  "candid_parser",
