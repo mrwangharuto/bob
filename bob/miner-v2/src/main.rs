@@ -85,7 +85,7 @@ mod tests {
 
         // The line below generates did types and service definition from the
         // methods annotated with Rust CDK macros above. The definition is then
-        // obtained with `__export_service()`.
+        // obtained with `__export_service()`. Git test.
         candid::export_service!();
         let implemented_interface_str = __export_service();
         let implemented_interface = CandidSource::Text(&implemented_interface_str);
