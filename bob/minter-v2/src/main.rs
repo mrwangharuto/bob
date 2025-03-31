@@ -138,135 +138,74 @@ fn get_leader_board() -> Vec<LeaderBoardEntry> {
     result.iter().rev().take(20).cloned().collect()
 }
 
-// #[update]
-// async fn spawn_miner(block_index: u64) -> Result<Principal, String> {
-//     // Transfer ICP to 6b896884e0b42634eca9c68c435c47b0ef2b97cf874a17198856b9c4efe89249
-//     // With Memo 1347768404
-//     if ic_cdk::caller() == Principal::anonymous() {
-//         return Err("cannot spawn anonymously".to_string());
-//     }
-//     let _guard_principal = GuardPrincipal::new(ic_cdk::caller())
-//         .map_err(|guard_error| format!("{:?}", guard_error))?;
+ #[update]
+ async fn spawn_miner(block_index: u64) -> Result<Principal, String> {
+     // Transfer ICP to 6b896884e0b42634eca9c68c435c47b0ef2b97cf874a17198856b9c4efe89249
+     // With Memo 1347768404
+     if ic_cdk::caller() == Principal::anonymous() {
+         return Err("cannot spawn anonymously".to_string());
+     }
+     let _guard_principal = GuardPrincipal::new(ic_cdk::caller())
+         .map_err(|guard_error| format!("{:?}", guard_error))?;
 
-//     if read_state(|s| s.miner_block_index.contains(&block_index)) || is_known_block(block_index) {
-//         return Err("already consumed block index".to_string());
-//     }
+     if read_state(|s| s.miner_block_index.contains(&block_index)) || is_known_block(block_index) {
+         return Err("already consumed block index".to_string());
+     }
 
-//     let transaction = fetch_block(block_index).await?.transaction;
+     let transaction = fetch_block(block_index).await?.transaction;
 
-//     if transaction.memo != icp_ledger::Memo(1347768404) {
-//         return Err("unknown memo".to_string());
-//     }
+     if transaction.memo != icp_ledger::Memo(1347768404) {
+         return Err("unknown memo".to_string());
+     }
 
-//     let caller = AccountIdentifier::new(ic_types::PrincipalId(ic_cdk::caller()), None);
-//     let expect_to = AccountIdentifier::from_hex(
-//         "e7b583c3e3e2837c987831a97a6b980cbb0be89819e85915beb3c02006923fce",
-//     )
-//     .unwrap();
-//     let old_to = AccountIdentifier::from_hex(
-//         "6b896884e0b42634eca9c68c435c47b0ef2b97cf874a17198856b9c4efe89249",
-//     )
-//     .unwrap();
+     let caller = AccountIdentifier::new(ic_types::PrincipalId(ic_cdk::caller()), None);
+     let expect_to = AccountIdentifier::from_hex(
+         "e7b583c3e3e2837c987831a97a6b980cbb0be89819e85915beb3c02006923fce",
+     )
+     .unwrap();
+     let old_to = AccountIdentifier::from_hex(
+         "6b896884e0b42634eca9c68c435c47b0ef2b97cf874a17198856b9c4efe89249",
+     )
+     .unwrap();
 
-//     if let Operation::Transfer {
-//         from, to, amount, ..
-//     } = transaction.operation
-//     {
-//         assert_eq!(from, caller, "unexpected caller");
-//         if to != expect_to && to != old_to {
-//             panic!("unexpected destintaion");
-//         }
-//         assert!(
-//             amount >= icp_ledger::Tokens::from_e8s(99_990_000_u64),
-//             "unexpected amount"
-//         );
-//     } else {
-//         return Err("expected transfer".to_string());
-//     }
+     if let Operation::Transfer {
+         from, to, amount, ..
+     } = transaction.operation
+     {
+         assert_eq!(from, caller, "unexpected caller");
+         if to != expect_to && to != old_to {
+             panic!("unexpected destintaion");
+         }
+         assert!(
+             amount >= icp_ledger::Tokens::from_e8s(99_990_000_u64),
+             "unexpected amount"
+         );
+     } else {
+         return Err("expected transfer".to_string());
+     }
 
-//     const CYCLES_FOR_CREATION: u64 = 2_500_000_000_000;
+     const CYCLES_FOR_CREATION: u64 = 2_500_000_000_000;
 
-//     let _res = notify_top_up(block_index).await?;
+     let _res = notify_top_up(block_index).await?;
 
-//     let arg = Encode!(&ic_cdk::caller()).unwrap();
+     let arg = Encode!(&ic_cdk::caller()).unwrap();
 
-//     let canister_id = create_canister(CYCLES_FOR_CREATION)
-//         .await
-//         .map_err(|e| format!("{} - {:?}", e.method, e.reason))?;
+     let canister_id = create_canister(CYCLES_FOR_CREATION)
+         .await
+         .map_err(|e| format!("{} - {:?}", e.method, e.reason))?;
 
-//     install_code(canister_id, miner_wasm().to_vec(), arg)
-//         .await
-//         .map_err(|e| format!("{} - {:?}", e.method, e.reason))?;
+     install_code(canister_id, miner_wasm().to_vec(), arg)
+         .await
+         .map_err(|e| format!("{} - {:?}", e.method, e.reason))?;
 
-//     mutate_state(|s| {
-//         s.new_miner(canister_id, ic_cdk::caller(), block_index);
-//     });
+     mutate_state(|s| {
+         s.new_miner(canister_id, ic_cdk::caller(), block_index);
+     });
 
-//     insert_new_miner(canister_id, ic_cdk::caller(), block_index);
+     insert_new_miner(canister_id, ic_cdk::caller(), block_index);
 
-//     Ok(canister_id)
-// }
-
-async fn spawn_miner(block_index: u64) -> Result<Principal, String> {
-    if ic_cdk::caller() == Principal::anonymous() {
-        return Err("cannot spawn anonymously".to_string());
-    }
-    let _guard_principal = GuardPrincipal::new(ic_cdk::caller())
-        .map_err(|guard_error| format!("{:?}", guard_error))?;
-
-    if read_state(|s| s.miner_block_index.contains(&block_index)) || is_known_block(block_index) {
-        return Err("already consumed block index".to_string());
-    }
-
-    let transaction = {
-        #[cfg(target_arch = "wasm32")] // Local testing
-        {
-            ic_cdk::print(format!("Local test: Spawning miner with block index {} (mocked)", block_index));
-            Transaction {
-                memo: Memo(1347768404),
-                operation: None, // Mocked, no operation needed locally
-                created_at_time: None,
-            }
-        }
-        #[cfg(not(target_arch = "wasm32"))] // Mainnet
-        {
-            fetch_block(block_index).await?.transaction
-        }
-    };
-
-    if transaction.memo != Memo(1347768404) {
-        return Err("unknown memo".to_string());
-    }
-
-    // Assuming the transaction has a 'to' field in operation (adjust based on actual structure)
-    let caller = ic_cdk::caller();
-    let expect_to = Principal::from_text("e7b583c3e3e2837c987831a97a6b980cbb0be89819e85915beb3c02006923fce").unwrap();
-    let old_to = Principal::from_text("6b896884e0b42634eca9c68c435c47b0ef2b97cf874a17198856b9c4efe89249").unwrap();
-
-    // Mocked miner ID (simplified for local testing)
-    let miner_id = caller; // Could generate a unique ID if needed
-    mutate_state(|s| {
-        s.new_miner(miner_id, caller, block_index);
-    });
-    Ok(miner_id)
-}
-
-// Placeholder for is_known_block (adjust if defined elsewhere)
-fn is_known_block(_block_index: u64) -> bool {
-    false
-}
-
-// Assuming these are in lib.rs or elsewhere
-#[derive(CandidType)]
-struct AccountIdentifier(Principal);
-impl AccountIdentifier {
-    fn new(_pid: PrincipalId, _sub: Option<u32>) -> Self { AccountIdentifier(Principal::anonymous()) }
-    fn from_hex(_hex: &str) -> Result<Self, String> { Ok(AccountIdentifier(Principal::anonymous())) }
-}
-
-
-
-// End Add
+     Ok(canister_id)
+ }
 
 
 #[update]
