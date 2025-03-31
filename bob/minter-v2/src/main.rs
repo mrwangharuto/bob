@@ -17,13 +17,6 @@ use ic_cdk::{init, post_upgrade, query, update};
 use icp_ledger::{AccountIdentifier, Operation};
 use std::time::Duration;
 
-//added
-use ic_cdk_macros::*;
-use candid::{CandidType, Principal};
-use crate::{fetch_block, mutate_state, read_state, State, guard::GuardPrincipal}; // From lib.rs
-use icp_ledger::{Block as IcpBlock, Memo, Transaction}; // Adjust based on your imports
-use ic_types::PrincipalId;
-use std::convert::TryInto;
 
 fn main() {}
 
